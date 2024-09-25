@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Les chats chiffrés</title>
+    <!-- Intégration de Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Intégration de Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <!-- Intégration de Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+    <!-- Intégration de Intro.js -->
+    <link rel="stylesheet" href="https://unpkg.com/intro.js/minified/introjs.min.css">
+    <!-- Intégration de Toastr -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <!-- Intégration de i18next -->
+    <script src="https://unpkg.com/i18next@21.6.0/i18next.min.js"></script>
+    <style>
+        body {
+            font-family: 'Special Elite', cursive;
+        }
+        h1 {
+            font-size: 3rem;
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 40px;
+            color: #333;
+            text-shadow: 2px 2px #aaa;
+        }
+        #chat {
+            height: 300px;
+            overflow-y: scroll;
+        }
+        .modal-button {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        #encryptionSettings {
+            display: none;
+        }
+        #fileInput {
+            display: none;
+        }
+        #audioControls {
+            display: none;
+        }
+        #videoContainer {
+            display: none;
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background-color: #000;
+        }
+        #remoteVideo {
+            width: 100%;
+            height: 100%;
+        }
+        #localVideo {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 30%;
+            height: auto;
+            border: 2px solid #fff;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Modal pour la sélection de la langue -->
+<div class="modal fade" id="languageModal" tabindex="-1" aria-labelledby="languageModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title w-100" id="languageModalLabel">Sélectionnez votre langue</h1>
+      </div>
+      <div class="modal-body text-center">
+        <button class="btn btn-primary btn-block language-select" data-lang="fr">Français</button>
+        <button class="btn btn-secondary btn-block language-select" data-lang="en">English</button>
+        <!-- Ajoutez d'autres langues si nécessaire -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal pour le pseudonyme ou la connexion -->
+<div class="modal fade" id="pseudoModal" tabindex="-1" aria-labelledby="pseudoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title w-100" id="pseudoModalLabel">Les chats chiffrés</h1>
+      </div>
+      <div class="modal-body text-center">
+        <button id="googleLogin" class="btn btn-danger btn-block"><i class="fab fa-google"></i> Connexion avec Google</button>
+        <button id="facebookLogin" class="btn btn-primary btn-block"><i class="fab fa-facebook"></i> Connexion avec Facebook</button>
+        <button id="pseudoLogin" class="btn btn-secondary btn-block"><i class="fas fa-user"></i> Utiliser un Pseudonyme</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal pour entrer le pseudonyme -->
+<div class="modal fade" id="enterPseudoModal" tabindex="-1" aria-labelledby="enterPseudoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title w-100 text-center" id="enterPseudoModalLabel">Entrez votre pseudonyme</h5>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="pseudoInput" class="form-control" placeholder="Pseudonyme">
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="pseudoSubmit" class="btn btn-primary btn-block">Continuer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de sélection du mode -->
+<div class="modal fade" id="modeSelectionModal" tabindex="-1" aria-labelledby="modeSelectionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title w-100 text-center" id="modeSelectionModalLabel">Sélectionnez le mode</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+        <button id="transmissionButton" class="btn btn-primary modal-button">Transmission</button>
+        <button id="connexionButton" class="btn btn-secondary modal-button">Connexion</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmation de réinitialisation -->
+<div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title w-100 text-center" id="resetModalLabel">Réinitialisation</h5>
+      </div>
+      <div class="modal-body text-center">
+        <p>Voulez-vous récupérer vos données personnelles avant la réinitialisation ?</p>
+        <button id="confirmResetYes" class="btn btn-primary btn-block">Oui</button>
+        <button id="confirmResetNo" class="btn btn-secondary btn-block">Non</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container" id="mainContent" style="display:none;">
+    <h1>Les chats chiffrés</h1>
+
+    <div id="videoContainer" class="mb-3">
+        <video id="remoteVideo" autoplay playsinline></video>
+        <video id="localVideo" autoplay playsinline muted></video>
+    </div>
+
+    <button id="startTutorial" class="btn btn-info btn-block mb-3">Activer le Tutoriel</button>
+
+    <div id="chat" class="border rounded p-3 mb-3"></div>
+
+    <div class="input-group mb-3">
+        <input type="text" id="message" class="form-control" placeholder="Tapez votre message">
+        <div class="input-group-append">
+            <button id="send" class="btn btn-primary" disabled><i class="fas fa-paper-plane"></i></button>
+            <button id="fileButton" class="btn btn-secondary"><i class="fas fa-paperclip"></i></button>
+            <button id="recordButton" class="btn btn-secondary"><i class="fas fa-microphone"></i></button>
+            <button id="callButton" class="btn btn-success"><i class="fas fa-video"></i></button>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput">
+
+    <div id="audioControls" class="mb-3">
+        <button id="startRecording" class="btn btn-danger">Démarrer l'enregistrement</button>
+        <button id="stopRecording" class="btn btn-secondary" disabled>Arrêter l'enregistrement</button>
+    </div>
+
+    <h3>Paramètres de chiffrement</h3>
+    <div id="encryptionSettings">
+        <div class="form-group">
+            <label for="algorithmSelect">Algorithme de chiffrement</label>
+            <select id="algorithmSelect" class="form-control">
+                <option value="AES-GCM">AES-GCM</option>
+                <option value="AES-CBC">AES-CBC</option>
+                <option value="AES-CTR">AES-CTR</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="encryptionKey">Clé de chiffrement</label>
+            <div class="input-group">
+                <input type="text" id="encryptionKey" class="form-control" placeholder="Clé de chiffrement">
+                <div class="input-group-append">
+                    <button id="copyKeyButton" class="btn btn-outline-secondary">Copier la Clé</button>
+                </div>
+            </div>
+            <button id="generateKeyButton" class="btn btn-secondary btn-block mt-2">Générer une Clé</button>
+        </div>
+    </div>
+
+    <h3>Connexion</h3>
+
+    <div class="form-group">
+        <label for="offer">Offre de connexion</label>
+        <textarea id="offer" class="form-control" placeholder="Offre de connexion"></textarea>
+        <button id="createOffer" class="btn btn-secondary btn-block mt-2">Créer une Offre</button>
+    </div>
+
+    <div class="form-group">
+        <label for="answer">Réponse de connexion</label>
+        <textarea id="answer" class="form-control" placeholder="Réponse de connexion"></textarea>
+        <button id="setAnswer" class="btn btn-secondary btn-block mt-2">Définir la Réponse</button>
+    </div>
+
+    <button id="changeModeButton" class="btn btn-warning btn-block">Changer de Mode</button>
+
+    <button id="resetButton" class="btn btn-danger btn-block mt-4">Réinitialisation</button>
+</div>
+
+<!-- Scripts nécessaires -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<!-- Scripts Bootstrap -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+<!-- Intro.js JS -->
+<script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
+<!-- Toastr JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<!-- Firebase App -->
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-auth.js"></script>
+<!-- CryptoJS -->
+<script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/crypto-js.min.js"></script>
+
+<script>
+    var firebaseConfig = {
+        apiKey: "VOTRE_API_KEY",
+        authDomain: "VOTRE_DOMAINE.firebaseapp.com",
+        projectId: "VOTRE_PROJECT_ID",
+        storageBucket: "VOTRE_STORAGE_BUCKET",
+        messagingSenderId: "VOTRE_SENDER_ID",
+        appId: "VOTRE_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    const chat = document.getElementById('chat');
+    const messageInput = document.getElementById('message');
+    const sendButton = document.getElementById('send');
+    const offerTextarea = document.getElementById('offer');
+    const answerTextarea = document.getElementById('answer');
+    const createOfferButton = document.getElementById('createOffer');
+    const setAnswerButton = document.getElementById('setAnswer');
+    const startTutorialButton = document.getElementById('startTutorial');
+    const algorithmSelect = document.getElementById('algorithmSelect');
+    const generateKeyButton = document.getElementById('generateKeyButton');
+    const copyKeyButton = document.getElementById('copyKeyButton');
+    const encryptionKeyInput = document.getElementById('encryptionKey');
+    const pseudoModal = $('#pseudoModal');
+    const googleLogin = document.getElementById('googleLogin');
+    const facebookLogin = document.getElementById('facebookLogin');
+    const pseudoLogin = document.getElementById('pseudoLogin');
+    const enterPseudoModal = $('#enterPseudoModal');
+    const pseudoInput = document.getElementById('pseudoInput');
+    const pseudoSubmit = document.getElementById('pseudoSubmit');
+    const fileButton = document.getElementById('fileButton');
+    const fileInput = document.getElementById('fileInput');
+    const recordButton = document.getElementById('recordButton');
+    const startRecordingButton = document.getElementById('startRecording');
+    const stopRecordingButton = document.getElementById('stopRecording');
+    const audioControls = document.getElementById('audioControls');
+    const callButton = document.getElementById('callButton');
+    const resetButton = document.getElementById('resetButton');
+    const resetModal = $('#resetModal');
+    const confirmResetYes = document.getElementById('confirmResetYes');
+    const confirmResetNo = document.getElementById('confirmResetNo');
+    const changeModeButton = document.getElementById('changeModeButton');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const localVideo = document.getElementById('localVideo');
+    const videoContainer = document.getElementById('videoContainer');
+    const languageModal = $('#languageModal');
+
+    let pseudonyme = '';
+    let profileLink = '';
+    let dataChannel;
+    let mode = '';
+    let encryptionKey = '';
+    let algorithm = 'AES-GCM';
+    let peerConnection;
+    let messages = [];
+    let mediaRecorder;
+    let audioChunks = [];
+    let localStream;
+    let remoteStream;
+    let isCalling = false;
+    let encryptionKeyBuffer;
+    let iv;
+    let language = localStorage.getItem('language') || 'fr';
+
+    $(document).ready(function(){
+        i18next.init({
+            lng: language,
+            resources: {
+                en: {
+                    translation: {
+                        "Les chats chiffrés": "Encrypted Chats",
+                        "Connexion avec Google": "Login with Google",
+                        "Connexion avec Facebook": "Login with Facebook",
+                        "Utiliser un Pseudonyme": "Use a Pseudonym",
+                        "Entrez votre pseudonyme": "Enter your pseudonym",
+                        "Continuer": "Continue",
+                        "Sélectionnez le mode": "Select Mode",
+                        "Transmission": "Transmission",
+                        "Connexion": "Connection",
+                        "Activer le Tutoriel": "Activate Tutorial",
+                        "Tapez votre message": "Type your message",
+                        "Paramètres de chiffrement": "Encryption Settings",
+                        "Algorithme de chiffrement": "Encryption Algorithm",
+                        "Clé de chiffrement": "Encryption Key",
+                        "Copier la Clé": "Copy Key",
+                        "Générer une Clé": "Generate Key",
+                        "Offre de connexion": "Connection Offer",
+                        "Créer une Offre": "Create Offer",
+                        "Réponse de connexion": "Connection Answer",
+                        "Définir la Réponse": "Set Answer",
+                        "Changer de Mode": "Change Mode",
+                        "Réinitialisation": "Reset",
+                        "Voulez-vous récupérer vos données personnelles avant la réinitialisation ?": "Do you want to retrieve your personal data before resetting?",
+                        "Oui": "Yes",
+                        "Non": "No",
+                        "Démarrer l'enregistrement": "Start Recording",
+                        "Arrêter l'enregistrement": "Stop Recording",
+                        "Vous avez envoyé un fichier :": "You sent a file:",
+                        "Vous avez envoyé un enregistrement audio.": "You sent an audio recording.",
+                        "Vous avez reçu un enregistrement audio.": "You received an audio recording.",
+                        "Vous avez reçu une vidéo.": "You received a video.",
+                        "Vous avez reçu un fichier :": "You received a file:",
+                        "Copiez la clé de chiffrement pour l'envoyer à votre ami.": "Copy the encryption key to send it to your friend.",
+                        "Cliquez sur ce bouton pour créer une offre de connexion.": "Click this button to create a connection offer.",
+                        "Cliquez sur ce bouton pour définir la réponse et établir la connexion.": "Click this button to set the answer and establish the connection.",
+                        "Cliquez sur 'Envoyer' pour transmettre votre message.": "Click 'Send' to transmit your message.",
+                        // Ajoutez d'autres traductions si nécessaire
+                    }
+                },
+                fr: {
+                    translation: {
+                        // Les traductions françaises sont déjà en place
+                    }
+                }
+            }
+        }, function(err, t) {
+            updateContent();
+            languageModal.modal({backdrop: 'static', keyboard: false});
+        });
+    });
+
+    function updateContent() {
+        $('h1').text(i18next.t('Les chats chiffrés'));
+        $('#googleLogin').html('<i class="fab fa-google"></i> ' + i18next.t('Connexion avec Google'));
+        $('#facebookLogin').html('<i class="fab fa-facebook"></i> ' + i18next.t('Connexion avec Facebook'));
+        $('#pseudoLogin').html('<i class="fas fa-user"></i> ' + i18next.t('Utiliser un Pseudonyme'));
+        $('#enterPseudoModalLabel').text(i18next.t('Entrez votre pseudonyme'));
+        $('#pseudoSubmit').text(i18next.t('Continuer'));
+        $('#modeSelectionModalLabel').text(i18next.t('Sélectionnez le mode'));
+        $('#transmissionButton').text(i18next.t('Transmission'));
+        $('#connexionButton').text(i18next.t('Connexion'));
+        $('#startTutorial').text(i18next.t('Activer le Tutoriel'));
+        $('#message').attr('placeholder', i18next.t('Tapez votre message'));
+        $('h3').eq(0).text(i18next.t('Paramètres de chiffrement'));
+        $('label[for="algorithmSelect"]').text(i18next.t('Algorithme de chiffrement'));
+        $('label[for="encryptionKey"]').text(i18next.t('Clé de chiffrement'));
+        $('#copyKeyButton').text(i18next.t('Copier la Clé'));
+        $('#generateKeyButton').text(i18next.t('Générer une Clé'));
+        $('h3').eq(1).text(i18next.t('Connexion'));
+        $('label[for="offer"]').text(i18next.t('Offre de connexion'));
+        $('#createOffer').text(i18next.t('Créer une Offre'));
+        $('label[for="answer"]').text(i18next.t('Réponse de connexion'));
+        $('#setAnswer').text(i18next.t('Définir la Réponse'));
+        $('#changeModeButton').text(i18next.t('Changer de Mode'));
+        $('#resetButton').text(i18next.t('Réinitialisation'));
+        $('#resetModalLabel').text(i18next.t('Réinitialisation'));
+        $('#resetModal p').text(i18next.t('Voulez-vous récupérer vos données personnelles avant la réinitialisation ?'));
+        $('#confirmResetYes').text(i18next.t('Oui'));
+        $('#confirmResetNo').text(i18next.t('Non'));
+        $('#startRecording').text(i18next.t('Démarrer l\'enregistrement'));
+        $('#stopRecording').text(i18next.t('Arrêter l\'enregistrement'));
+    }
+
+    $('.language-select').on('click', function() {
+        language = $(this).data('lang');
+        localStorage.setItem('language', language);
+        i18next.changeLanguage(language, function(err, t) {
+            updateContent();
+            languageModal.modal('hide');
+            pseudonyme = localStorage.getItem('pseudonyme') || '';
+            profileLink = localStorage.getItem('profileLink') || '';
+            if (pseudonyme === '') {
+                pseudoModal.modal({backdrop: 'static', keyboard: false});
+            } else {
+                $('#pseudoModal').modal('hide');
+                initializeApp();
+            }
+        });
+    });
+
+    function initializeApp() {
+        mode = localStorage.getItem('mode') || '';
+        if (mode === '') {
+            $('#modeSelectionModal').modal({backdrop: 'static', keyboard: false});
+        } else {
+            $('#modeSelectionModal').modal('hide');
+            $('#mainContent').show();
+            $('#encryptionSettings').show();
+            algorithm = localStorage.getItem('algorithm') || 'AES-GCM';
+            encryptionKey = localStorage.getItem('encryptionKey') || '';
+            algorithmSelect.value = algorithm;
+            encryptionKeyInput.value = encryptionKey;
+            loadChatHistory();
+            setupPeerConnection();
+            if (mode === 'transmission') {
+                startTransmission();
+            } else if (mode === 'connexion') {
+                startConnexion();
+            }
+        }
+    }
+
+    function setupPeerConnection() {
+        peerConnection = new RTCPeerConnection();
+        peerConnection.ondatachannel = (event) => {
+            dataChannel = event.channel;
+            setupDataChannel();
+        };
+        peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+            } else {
+                if (mode === 'transmission') {
+                    offerTextarea.value = JSON.stringify(peerConnection.localDescription);
+                    localStorage.setItem('localDescription', JSON.stringify(peerConnection.localDescription));
+                } else if (mode === 'connexion') {
+                    answerTextarea.value = JSON.stringify(peerConnection.localDescription);
+                    localStorage.setItem('localDescription', JSON.stringify(peerConnection.localDescription));
+                }
+            }
+        };
+        peerConnection.ontrack = (event) => {
+            if (!remoteStream) {
+                remoteStream = new MediaStream();
+                remoteVideo.srcObject = remoteStream;
+                videoContainer.style.display = 'block';
+                chat.style.display = 'none';
+            }
+            remoteStream.addTrack(event.track);
+        };
+    }
+
+    googleLogin.addEventListener('click', function(){
+        var provider = new firebase.auth.GoogleAuthProvider();
+        firebase.auth()
+            .signInWithPopup(provider)
+            .then((result) => {
+                pseudonyme = result.user.displayName;
+                profileLink = result.user.photoURL;
+                localStorage.setItem('pseudonyme', pseudonyme);
+                localStorage.setItem('profileLink', profileLink);
+                pseudoModal.modal('hide');
+                initializeApp();
+            }).catch((error) => {
+                toastr.error('Erreur lors de la connexion avec Google.', 'Erreur');
+            });
+    });
+
+    facebookLogin.addEventListener('click', function(){
+        var provider = new firebase.auth.FacebookAuthProvider();
+        firebase.auth()
+            .signInWithPopup(provider)
+            .then((result) => {
+                pseudonyme = result.user.displayName;
+                profileLink = result.user.photoURL;
+                localStorage.setItem('pseudonyme', pseudonyme);
+                localStorage.setItem('profileLink', profileLink);
+                pseudoModal.modal('hide');
+                initializeApp();
+            }).catch((error) => {
+                toastr.error('Erreur lors de la connexion avec Facebook.', 'Erreur');
+            });
+    });
+
+    pseudoLogin.addEventListener('click', function(){
+        pseudoModal.modal('hide');
+        enterPseudoModal.modal({backdrop: 'static', keyboard: false});
+    });
+
+    pseudoSubmit.addEventListener('click', function(){
+        if (pseudoInput.value.trim() !== '') {
+            pseudonyme = pseudoInput.value.trim();
+            profileLink = '';
+            localStorage.setItem('pseudonyme', pseudonyme);
+            localStorage.setItem('profileLink', profileLink);
+            enterPseudoModal.modal('hide');
+            initializeApp();
+        } else {
+            toastr.error('Veuillez entrer un pseudonyme.', 'Erreur');
+        }
+    });
+
+    $('#transmissionButton').on('click', function(){
+        mode = 'transmission';
+        localStorage.setItem('mode', mode);
+        $('#modeSelectionModal').modal('hide');
+        $('#mainContent').show();
+        $('#encryptionSettings').show();
+        setupPeerConnection();
+        startTransmission();
+    });
+
+    $('#connexionButton').on('click', function(){
+        mode = 'connexion';
+        localStorage.setItem('mode', mode);
+        $('#modeSelectionModal').modal('hide');
+        $('#mainContent').show();
+        $('#createOffer').prop('disabled', true);
+        $('#send').prop('disabled', true);
+        $('#encryptionSettings').show();
+        setupPeerConnection();
+        startConnexion();
+    });
+
+    $('#modeSelectionModal').on('hidden.bs.modal', function () {
+        if (mode === '') {
+            mode = 'transmission';
+            localStorage.setItem('mode', mode);
+            $('#mainContent').show();
+            $('#encryptionSettings').show();
+            setupPeerConnection();
+            startTransmission();
+        }
+    });
+
+    algorithmSelect.addEventListener('change', function(){
+        algorithm = algorithmSelect.value;
+        localStorage.setItem('algorithm', algorithm);
+        generateEncryptionKey();
+    });
+
+    generateKeyButton.addEventListener('click', function(){
+        generateEncryptionKey();
+    });
+
+    copyKeyButton.addEventListener('click', function(){
+        encryptionKeyInput.select();
+        document.execCommand('copy');
+        toastr.success('Clé de chiffrement copiée dans le presse-papiers.', 'Copie réussie');
+    });
+
+    encryptionKeyInput.addEventListener('input', function(){
+        encryptionKey = encryptionKeyInput.value;
+        localStorage.setItem('encryptionKey', encryptionKey);
+        importEncryptionKey();
+    });
+
+    async function generateEncryptionKey(){
+        const key = await crypto.subtle.generateKey(
+            { name: algorithm, length: 256 },
+            true,
+            ["encrypt", "decrypt"]
+        );
+        const exportedKey = await crypto.subtle.exportKey('raw', key);
+        encryptionKey = btoa(String.fromCharCode(...new Uint8Array(exportedKey)));
+        encryptionKeyInput.value = encryptionKey;
+        localStorage.setItem('encryptionKey', encryptionKey);
+        encryptionKeyBuffer = key;
+    }
+
+    async function importEncryptionKey(){
+        const rawKey = Uint8Array.from(atob(encryptionKey), c => c.charCodeAt(0));
+        encryptionKeyBuffer = await crypto.subtle.importKey(
+            'raw',
+            rawKey,
+            { name: algorithm },
+            true,
+            ['encrypt', 'decrypt']
+        );
+    }
+
+    async function encryptMessage(message){
+        if (!encryptionKeyBuffer) {
+            await importEncryptionKey();
+        }
+        iv = crypto.getRandomValues(new Uint8Array(12));
+        const encodedMessage = new TextEncoder().encode(message);
+        const ciphertext = await crypto.subtle.encrypt(
+            { name: algorithm, iv },
+            encryptionKeyBuffer,
+            encodedMessage
+        );
+        return {
+            iv: Array.from(iv),
+            ciphertext: Array.from(new Uint8Array(ciphertext))
+        };
+    }
+
+    async function decryptMessage(data){
+        if (!encryptionKeyBuffer) {
+            await importEncryptionKey();
+        }
+        const iv = new Uint8Array(data.iv);
+        const ciphertext = new Uint8Array(data.ciphertext);
+        const decrypted = await crypto.subtle.decrypt(
+            { name: algorithm, iv },
+            encryptionKeyBuffer,
+            ciphertext
+        );
+        return new TextDecoder().decode(decrypted);
+    }
+
+    function startTransmission() {
+        dataChannel = peerConnection.createDataChannel('chat');
+        setupDataChannel();
+        restoreConnection();
+        startTransmissionTutorial();
+    }
+
+    function startConnexion() {
+        $('#createOffer').prop('disabled', true);
+        $('#send').prop('disabled', true);
+        restoreConnection();
+        startListeningTutorial();
+    }
+
+    function setupDataChannel() {
+        dataChannel.onopen = () => {
+            sendButton.disabled = false;
+            toastr.success('Le canal de données est maintenant ouvert !', 'Connexion établie');
+        };
+
+        dataChannel.onclose = () => {
+            sendButton.disabled = true;
+            toastr.warning('Le canal de données est fermé.', 'Connexion fermée');
+        };
+
+        dataChannel.onmessage = async (event) => {
+            const data = event.data;
+
+            if (typeof data === 'string') {
+                const parsedData = JSON.parse(data);
+                const decrypted = await decryptMessage(parsedData);
+                const message = document.createElement('div');
+                message.innerHTML = decrypted;
+                chat.appendChild(message);
+                saveMessage(decrypted);
+            } else if (data instanceof ArrayBuffer || data instanceof Blob) {
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    const receivedData = JSON.parse(reader.result);
+                    const decrypted = await decryptMessage(receivedData);
+                    const fileData = JSON.parse(decrypted);
+                    const fileBlob = new Blob([Uint8Array.from(fileData.data)], { type: fileData.type });
+                    const url = URL.createObjectURL(fileBlob);
+
+                    if (fileData.type.startsWith('audio/')) {
+                        const audio = document.createElement('audio');
+                        audio.src = url;
+                        audio.controls = true;
+                        chat.appendChild(audio);
+                        saveMessage(i18next.t('Vous avez reçu un enregistrement audio.'));
+                    } else if (fileData.type.startsWith('video/')) {
+                        const video = document.createElement('video');
+                        video.src = url;
+                        video.controls = true;
+                        video.style.width = '100%';
+                        chat.appendChild(video);
+                        saveMessage(i18next.t('Vous avez reçu une vidéo.'));
+                    } else {
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = fileData.name;
+                        link.textContent = `${i18next.t('Vous avez reçu un fichier :')} ${fileData.name}`;
+                        chat.appendChild(link);
+                        saveMessage(`${i18next.t('Vous avez reçu un fichier :')} ${fileData.name}`);
+                    }
+                    chat.scrollTop = chat.scrollHeight;
+                };
+                reader.readAsText(data);
+            }
+        };
+    }
+
+    sendButton.addEventListener('click', async () => {
+        const message = messageInput.value;
+        if (message.trim() !== '' && dataChannel.readyState === 'open') {
+            const nameDisplay = profileLink ? `<a href="${profileLink}" target="_blank">${pseudonyme}</a>` : pseudonyme;
+            const content = `${nameDisplay}: ${message}`;
+            const encrypted = await encryptMessage(content);
+            dataChannel.send(JSON.stringify(encrypted));
+            const localMessage = document.createElement('div');
+            localMessage.innerHTML = `Vous: ${message}`;
+            localMessage.classList.add('text-right', 'font-weight-bold');
+            chat.appendChild(localMessage);
+            chat.scrollTop = chat.scrollHeight;
+            messageInput.value = '';
+            saveMessage(`Vous: ${message}`);
+        }
+    });
+
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendButton.click();
+        }
+    });
+
+    fileButton.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', async () => {
+        const file = fileInput.files[0];
+        if (file && dataChannel.readyState === 'open') {
+            const arrayBuffer = await file.arrayBuffer();
+            const fileData = {
+                name: file.name,
+                type: file.type,
+                data: Array.from(new Uint8Array(arrayBuffer))
+            };
+            const encrypted = await encryptMessage(JSON.stringify(fileData));
+            const blob = new Blob([JSON.stringify(encrypted)]);
+            dataChannel.send(blob);
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(file);
+            link.download = file.name;
+            link.textContent = `${i18next.t('Vous avez envoyé un fichier :')} ${file.name}`;
+            link.classList.add('text-right', 'font-weight-bold');
+            chat.appendChild(link);
+            chat.scrollTop = chat.scrollHeight;
+            saveMessage(`${i18next.t('Vous avez envoyé un fichier :')} ${file.name}`);
+        }
+    });
+
+    recordButton.addEventListener('click', () => {
+        if (audioControls.style.display === 'none' || audioControls.style.display === '') {
+            audioControls.style.display = 'block';
+        } else {
+            audioControls.style.display = 'none';
+        }
+    });
+
+    startRecordingButton.addEventListener('click', async () => {
+        startRecordingButton.disabled = true;
+        stopRecordingButton.disabled = false;
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.start();
+        audioChunks = [];
+        mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+        };
+    });
+
+    stopRecordingButton.addEventListener('click', () => {
+        startRecordingButton.disabled = false;
+        stopRecordingButton.disabled = true;
+        mediaRecorder.stop();
+        mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const arrayBuffer = await audioBlob.arrayBuffer();
+            const fileData = {
+                name: 'enregistrement_audio.webm',
+                type: 'audio/webm',
+                data: Array.from(new Uint8Array(arrayBuffer))
+            };
+            const encrypted = await encryptMessage(JSON.stringify(fileData));
+            const blob = new Blob([JSON.stringify(encrypted)]);
+            dataChannel.send(blob);
+            const audioURL = URL.createObjectURL(audioBlob);
+            const audio = document.createElement('audio');
+            audio.src = audioURL;
+            audio.controls = true;
+            audio.classList.add('text-right', 'mt-2');
+            chat.appendChild(audio);
+            chat.scrollTop = chat.scrollHeight;
+            saveMessage(i18next.t('Vous avez envoyé un enregistrement audio.'));
+        };
+    });
+
+    callButton.addEventListener('click', async () => {
+        if (!isCalling) {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+            localVideo.srcObject = localStream;
+            videoContainer.style.display = 'block';
+            chat.style.display = 'none';
+            isCalling = true;
+
+            // Créer une nouvelle offre pour le renvoi
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            offerTextarea.value = JSON.stringify(peerConnection.localDescription);
+            toastr.info('Nouvelle offre créée, veuillez échanger les offres pour établir l\'appel.');
+
+        } else {
+            localStream.getTracks().forEach(track => track.stop());
+            localVideo.srcObject = null;
+            videoContainer.style.display = 'none';
+            chat.style.display = 'block';
+            isCalling = false;
+            toastr.info('Appel terminé.');
+
+            // Fermer et recréer la connexion pour arrêter l'appel
+            peerConnection.close();
+            setupPeerConnection();
+            if (mode === 'transmission') {
+                dataChannel = peerConnection.createDataChannel('chat');
+                setupDataChannel();
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                offerTextarea.value = JSON.stringify(peerConnection.localDescription);
+                toastr.info('Nouvelle offre créée, veuillez échanger les offres pour rétablir la connexion.');
+            } else if (mode === 'connexion') {
+                toastr.info('Veuillez échanger les offres pour rétablir la connexion.');
+            }
+        }
+    });
+
+    createOfferButton.addEventListener('click', async () => {
+        try {
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            offerTextarea.value = JSON.stringify(peerConnection.localDescription);
+            localStorage.setItem('localDescription', JSON.stringify(peerConnection.localDescription));
+        } catch (error) {
+            toastr.error('Une erreur est survenue lors de la création de l\'offre.', 'Erreur');
+        }
+    });
+
+    setAnswerButton.addEventListener('click', async () => {
+        try {
+            const answer = JSON.parse(answerTextarea.value);
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+            localStorage.setItem('remoteDescription', JSON.stringify(answer));
+        } catch (error) {
+            toastr.error('Une erreur est survenue lors de la définition de la réponse.', 'Erreur');
+        }
+    });
+
+    offerTextarea.addEventListener('change', async () => {
+        try {
+            const offer = JSON.parse(offerTextarea.value);
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            localStorage.setItem('remoteDescription', JSON.stringify(offer));
+
+            if (peerConnection.signalingState !== 'stable') {
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                answerTextarea.value = JSON.stringify(peerConnection.localDescription);
+                localStorage.setItem('localDescription', JSON.stringify(peerConnection.localDescription));
+            }
+        } catch (error) {
+            toastr.error('Une erreur est survenue lors de l\'acceptation de l\'offre.', 'Erreur');
+        }
+    });
+
+    startTutorialButton.addEventListener('click', () => {
+        if (mode === 'transmission') {
+            startTransmissionTutorial();
+        } else if (mode === 'connexion') {
+            startListeningTutorial();
+        }
+    });
+
+    changeModeButton.addEventListener('click', () => {
+        localStorage.removeItem('mode');
+        location.reload();
+    });
+
+    function startTransmissionTutorial() {
+        introJs()
+            .setOptions({
+                steps: [
+                    {
+                        intro: "Bienvenue dans le tutoriel de Les chats chiffrés en mode Transmission !"
+                    },
+                    {
+                        element: document.querySelector('#algorithmSelect'),
+                        intro: "Sélectionnez l'algorithme de chiffrement désiré.",
+                        position: 'right'
+                    },
+                    {
+                        element: document.querySelector('#generateKeyButton'),
+                        intro: "Générez une clé de chiffrement ou entrez votre propre passphrase.",
+                        position: 'right'
+                    },
+                    {
+                        element: document.querySelector('#copyKeyButton'),
+                        intro: "Copiez la clé de chiffrement pour l'envoyer à votre ami.",
+                        position: 'right'
+                    },
+                    {
+                        intro: "Transmettez également à votre ami l'algorithme de chiffrement que vous avez sélectionné."
+                    },
+                    {
+                        intro: "N'oubliez pas de partager l'adresse du site avec votre ami."
+                    },
+                    {
+                        element: document.querySelector('#createOffer'),
+                        intro: "Cliquez sur ce bouton pour créer une offre de connexion.",
+                        position: 'right'
+                    },
+                    {
+                        element: document.querySelector('#offer'),
+                        intro: "Copiez cette offre et envoyez-la à votre ami.",
+                        position: 'right'
+                    },
+                    {
+                        element: document.querySelector('#answer'),
+                        intro: "Collez ici la réponse que vous recevrez de votre ami.",
+                        position: 'right'
+                    },
+                    {
+                        element: document.querySelector('#setAnswer'),
+                        intro: "Cliquez sur ce bouton pour définir la réponse et établir la connexion.",
+                        position: 'right'
+                    },
+                    {
+                        element: document.querySelector('#message'),
+                        intro: "Une fois connecté, vous pouvez taper votre message ici.",
+                        position: 'bottom'
+                    },
+                    {
+                        element: document.querySelector('#send'),
+                        intro: "Cliquez sur 'Envoyer' pour transmettre votre message.",
+                        position: 'left'
+                    },
+                    {
+                        intro: "Tutoriel terminé ! Vous êtes prêt à utiliser l'application."
+                    }
+                ],
+                showProgress: true,
+                showBullets: false,
+                nextLabel: 'Suivant',
+                prevLabel: 'Précédent',
+                skipLabel: '×',
+                doneLabel: 'Terminer'
+            })
+            .start();
+    }
+
+    function startListeningTutorial() {
+        introJs()
+            .setOptions({
+                steps: [
+                    {
+                        intro: "Bienvenue dans le tutoriel de Les chats chiffrés en mode Connexion !"
+                    },
+                    {
+                        intro: "Assurez-vous d'avoir reçu l'adresse du site, l'algorithme de chiffrement et la clé de chiffrement de votre ami."
+                    },
+                    {
+                        element: document.querySelector('#algorithmSelect'),
+                        intro: "Sélectionnez l'algorithme de chiffrement correspondant à celui de votre ami.",
+                        position: 'right'
+                    },
+                    {
+                        element: document.querySelector('#encryptionKey'),
+                        intro: "Entrez la clé de chiffrement ou la passphrase fournie par votre ami.",
+                        position: 'right'
+                    },
+                    {
+                        element: document.querySelector('#offer'),
+                        intro: "Collez ici l'offre de connexion que vous avez reçue.",
+                        position: 'right'
+                    },
+                    {
+                        intro: "L'application va générer une réponse automatiquement."
+                    },
+                    {
+                        element: document.querySelector('#answer'),
+                        intro: "Copiez cette réponse et envoyez-la à votre ami.",
+                        position: 'right'
+                    },
+                    {
+                        intro: "Une fois que votre ami aura défini votre réponse, la connexion sera établie."
+                    },
+                    {
+                        element: document.querySelector('#message'),
+                        intro: "Une fois connecté, vous pouvez taper votre message ici.",
+                        position: 'bottom'
+                    },
+                    {
+                        element: document.querySelector('#send'),
+                        intro: "Cliquez sur 'Envoyer' pour transmettre votre message.",
+                        position: 'left'
+                    },
+                    {
+                        intro: "Tutoriel terminé ! Vous êtes prêt à utiliser l'application."
+                    }
+                ],
+                showProgress: true,
+                showBullets: false,
+                nextLabel: 'Suivant',
+                prevLabel: 'Précédent',
+                skipLabel: '×',
+                doneLabel: 'Terminer'
+            })
+            .start();
+    }
+
+    function saveMessage(message) {
+        messages.push(message);
+        localStorage.setItem('messages', JSON.stringify(messages));
+    }
+
+    function loadChatHistory() {
+        const storedMessages = JSON.parse(localStorage.getItem('messages')) || [];
+        messages = storedMessages;
+        messages.forEach(msg => {
+            const message = document.createElement('div');
+            message.innerHTML = msg;
+            if (msg.startsWith('Vous: ')) {
+                message.classList.add('text-right', 'font-weight-bold');
+            }
+            chat.appendChild(message);
+        });
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function restoreConnection() {
+        const localDescription = localStorage.getItem('localDescription');
+        const remoteDescription = localStorage.getItem('remoteDescription');
+        if (localDescription) {
+            peerConnection.setLocalDescription(new RTCSessionDescription(JSON.parse(localDescription)));
+        }
+        if (remoteDescription) {
+            peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(remoteDescription)));
+        }
+    }
+
+    resetButton.addEventListener('click', () => {
+        resetModal.modal('show');
+    });
+
+    confirmResetNo.addEventListener('click', async () => {
+        localStorage.clear();
+
+        if (indexedDB && indexedDB.databases) {
+            const databases = await indexedDB.databases();
+            for (const dbInfo of databases) {
+                indexedDB.deleteDatabase(dbInfo.name);
+            }
+        }
+
+        toastr.success('Les données ont été réinitialisées.', 'Réinitialisation réussie');
+
+        resetModal.modal('hide');
+
+        location.reload();
+    });
+
+    confirmResetYes.addEventListener('click', async () => {
+        let data = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            data[`LocalStorage - ${key}`] = localStorage.getItem(key);
+        }
+
+        data['IndexedDB'] = {};
+
+        if (indexedDB && indexedDB.databases) {
+            const databases = await indexedDB.databases();
+            for (const dbInfo of databases) {
+                data['IndexedDB'][dbInfo.name] = await getAllDataFromDB(dbInfo.name);
+            }
+        }
+
+        const yamlData = convertToYAML(data);
+
+        const blob = new Blob([yamlData], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'donnees_personnelles.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        localStorage.clear();
+
+        if (indexedDB && indexedDB.databases) {
+            const databases = await indexedDB.databases();
+            for (const dbInfo of databases) {
+                indexedDB.deleteDatabase(dbInfo.name);
+            }
+        }
+
+        toastr.success('Les données ont été réinitialisées.', 'Réinitialisation réussie');
+
+        resetModal.modal('hide');
+
+        location.reload();
+    });
+
+    function convertToYAML(obj, indent = 0) {
+        let yaml = '';
+        for (const key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                const value = obj[key];
+                const indentation = '  '.repeat(indent);
+                if (typeof value === 'object' && value !== null) {
+                    yaml += `${indentation}${key}:\n`;
+                    yaml += convertToYAML(value, indent + 1);
+                } else {
+                    yaml += `${indentation}${key}: ${value}\n`;
+                }
+            }
+        }
+        return yaml;
+    }
+
+    function getAllDataFromDB(dbName) {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(dbName);
+            request.onsuccess = function(event) {
+                const db = event.target.result;
+                const transaction = db.transaction(db.objectStoreNames, 'readonly');
+                const data = {};
+                let pendingStores = db.objectStoreNames.length;
+
+                for (const storeName of db.objectStoreNames) {
+                    const objectStore = transaction.objectStore(storeName);
+                    const getAllRequest = objectStore.getAll();
+                    getAllRequest.onsuccess = function() {
+                        data[storeName] = getAllRequest.result;
+                        pendingStores--;
+                        if (pendingStores === 0) {
+                            resolve(data);
+                        }
+                    };
+                    getAllRequest.onerror = function() {
+                        pendingStores--;
+                        if (pendingStores === 0) {
+                            resolve(data);
+                        }
+                    };
+                }
+            };
+            request.onerror = function() {
+                resolve({});
+            };
+        });
+    }
+</script>
+
+</body>
+</html>
